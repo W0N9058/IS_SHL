@@ -93,7 +93,7 @@ class PurePursuit(Node):
             Also, Recommend set Ki extremely low.
         """
         #self.Kp = 1.32
-        self.Kp = 1.2
+        self.Kp = 0.9
         self.Ki = 0.005
         self.Kd = 0.05
         ###################################################
@@ -205,8 +205,8 @@ class PurePursuit(Node):
                 # 4) Calculate the appropriate speed based on the steering angle
                 #speed = max(self.min_speed, self.max_speed * (1 - abs(steer) / self.max_steer))
                 #speed = max(self.max_speed, self.max_speed * (1 - abs(steer) / self.max_steer))
-                #speed = self.max_speed
-                speed = self.max_speed * (1 - 0.9 * abs(steer) / self.max_steer)
+                speed = self.max_speed
+                #speed = self.max_speed * (1 - 0.9 * abs(steer) / self.max_steer)
                 #speed = self.max_speed * 0.8 * (1 - 0.99 * abs(steer) / self.max_steer)
                 speed = np.clip(speed, self.min_speed, self.max_speed)
                 ###################################################
@@ -246,8 +246,8 @@ class PurePursuit(Node):
                         """
                         Save trajectory when terminated at 'args.traj_dir'.
                         """
-                        np.save(os.path.join(self.traj_dir, "obs_map5_slow.npy"), np.array(obs_list))
-                        np.save(os.path.join(self.traj_dir, "act_map5_slow.npy"), np.array(act_list))    
+                        np.save(os.path.join(self.traj_dir, "obs_map2.npy"), np.array(obs_list))
+                        np.save(os.path.join(self.traj_dir, "act_map2.npy"), np.array(act_list))    
                                          
                         ###################################################
                         ###################################################
