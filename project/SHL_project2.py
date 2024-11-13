@@ -134,8 +134,8 @@ class GaussianProcess(Node):
            We recommend to pre/post-process observations and actions for better performance (e.g. normalization).
         """
         # Load the expert demonstration data
-        obs_data = np.load(os.path.join(self.traj_dir, "obs_map5.npy"))
-        act_data = np.load(os.path.join(self.traj_dir, "act_map5.npy"))
+        obs_data = np.load(os.path.join(self.traj_dir, "obs_map9.npy"))
+        act_data = np.load(os.path.join(self.traj_dir, "act_map9.npy"))
 
         # Normalize the observation and action data
         self.obs_mean, self.obs_std = obs_data.mean(axis=0), obs_data.std(axis=0)
