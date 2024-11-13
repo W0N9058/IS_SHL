@@ -1,15 +1,3 @@
 **/__pycache__
-<<<<<<< HEAD
 **/.vscode
 **/trajectory
-=======
-*.npz
-*.egg-info
-
-trajectory
-.vscode
-install
-log
-build
-backup
->>>>>>> e53b5cf615bd28e63e7ec17cd58945af698aec5e
