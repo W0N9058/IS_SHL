@@ -112,7 +112,7 @@ class GaussianProcess(Node):
         self.train_maps = ['map1', 'map2']
         #self.kernel = C(1.0, (0.01, 100)) * RBF(length_scale=0.1)
         #self.kernel = C(1.0, (0.01, 100)) * (RBF(length_scale=10.0, length_scale_bounds=(1.0, 100)) + RBF(length_scale=5.0, length_scale_bounds=(1.0, 50)))
-        self.kernel = C(1.0, (0.01, 100)) *(RBF(length_scale=20.0, length_scale_bounds=(5.0, 150)) + RBF(length_scale=5.0, length_scale_bounds=(1.0, 50)) + RBF(length_scale=1.0, length_scale_bounds=(0.1, 10)))
+        self.kernel = C(1.0, (0.01, 100)) *(RBF(length_scale=20.0, length_scale_bounds=(5.0, 150)) + RBF(length_scale=5.0, length_scale_bounds=(1.0, 50)) + RBF(length_scale=1.0, length_scale_bounds=(0.1, 15)))
 
         self.alpha = 1e-6
         self.model = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
@@ -134,8 +134,8 @@ class GaussianProcess(Node):
            We recommend to pre/post-process observations and actions for better performance (e.g. normalization).
         """
         # Load the expert demonstration data
-        obs_data = np.load(os.path.join(self.traj_dir, "obs_map5_shuffled.npy"))
-        act_data = np.load(os.path.join(self.traj_dir, "act_map5_shuffled.npy"))
+        obs_data = np.load(os.path.join(self.traj_dir, "obs_map15.npy"))
+        act_data = np.load(os.path.join(self.traj_dir, "act_map15.npy"))
 
         # Normalize the observation and action data
         self.obs_mean, self.obs_std = obs_data.mean(axis=0), obs_data.std(axis=0)
