@@ -14,6 +14,7 @@ from rccar_gym.env_wrapper import RCCarWrapper
 
 from sklearn.utils import shuffle
 from sklearn.gaussian_process import GaussianProcessRegressor
+#from sklearn.gaussian_process.kernels import RBF, Matern, RationalQuadratic, WhiteKernel, ExpSineSquared, ConstantKernel as C
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from joblib import dump, load
 
@@ -113,7 +114,9 @@ class GaussianProcess(Node):
         #self.kernel = C(1.0, (0.01, 100)) * RBF(length_scale=0.1)
         #self.kernel = C(1.0, (0.01, 100)) * (RBF(length_scale=10.0, length_scale_bounds=(1.0, 100)) + RBF(length_scale=5.0, length_scale_bounds=(1.0, 50)))
         self.kernel = C(1.0, (0.01, 100)) *(RBF(length_scale=20.0, length_scale_bounds=(5.0, 150)) + RBF(length_scale=5.0, length_scale_bounds=(1.0, 50)) + RBF(length_scale=1.0, length_scale_bounds=(0.1, 15)))
-
+        #self.kernel = C(1.0, (0.01, 100)) * (RBF(length_scale=20.0, length_scale_bounds=(5.0, 150)) + Matern(length_scale=10.0, length_scale_bounds=(5.0, 100), nu=2.5) + Matern(length_scale=5.0, length_scale_bounds=(2.0, 50), nu=1.5) + Matern(length_scale=2.0, length_scale_bounds=(1.0, 20), nu=0.5))
+        #self.kernel = C(1.0, (0.01, 100)) * (RationalQuadratic(length_scale=20.0, alpha=1.0, length_scale_bounds=(5.0, 150)) + RationalQuadratic(length_scale=10.0, alpha=0.5, length_scale_bounds=(2.0, 100)) + RationalQuadratic(length_scale=5.0, alpha=0.1, length_scale_bounds=(1.0, 50)))
+        #self.kernel = C(1.0, (0.01, 100)) * (RBF(length_scale=30.0, length_scale_bounds=(10.0, 200)) + Matern(length_scale=10.0, length_scale_bounds=(5.0, 100), nu=2.5) + RationalQuadratic(length_scale=15.0, alpha=0.5, length_scale_bounds=(5.0, 150)) + ExpSineSquared(length_scale=20.0, periodicity=10.0, length_scale_bounds=(5.0, 50))) + WhiteKernel(noise_level=0.1, noise_level_bounds=(1e-5, 1e1))
         self.alpha = 1e-6
         self.model = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         #self.model = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha, n_restarts_optimizer=3)
@@ -134,8 +137,8 @@ class GaussianProcess(Node):
            We recommend to pre/post-process observations and actions for better performance (e.g. normalization).
         """
         # Load the expert demonstration data
-        obs_data = np.load(os.path.join(self.traj_dir, "obs_map15.npy"))
-        act_data = np.load(os.path.join(self.traj_dir, "act_map15.npy"))
+        obs_data = np.load(os.path.join(self.traj_dir, "obs_map5.npy"))
+        act_data = np.load(os.path.join(self.traj_dir, "act_map5.npy"))
 
         # Normalize the observation and action data
         self.obs_mean, self.obs_std = obs_data.mean(axis=0), obs_data.std(axis=0)
