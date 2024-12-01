@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 from ruamel.yaml import YAML
 from easydict import EasyDict
+import pickle
 
 import rclpy
 from rclpy.node import Node
@@ -52,7 +53,7 @@ def get_args():
     Note that this will used for evaluation by the server as well.
     You can add any arguments you want.
     """
-    parser.add_argument("--model_name", default="last_model.pth", type=str, help="Model name to save and use")
+    parser.add_argument("--model_name", default="last_model.pkl", type=str, help="Model name to save and use")
     ###################################################
     ###################################################
     
@@ -209,7 +210,7 @@ class RCCarPolicy(Node):
         num_epochs = 200
         batch_size = 128
         best_loss = float('inf')  # Initialize to a large value
-        best_model_path = os.path.join(self.model_dir, "best_model.pth")
+        best_model_path = os.path.join(self.model_dir, "best_model.pkl")
 
         for epoch in range(num_epochs):
             np.random.seed(self.args.seed + epoch)
