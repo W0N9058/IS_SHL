@@ -182,8 +182,8 @@ class RCCarPolicy(Node):
         """
         
         # Load training data
-        obs_data_path = os.path.join(self.traj_dir, "obs_map5.npy")
-        act_data_path = os.path.join(self.traj_dir, "act_map5.npy")
+        obs_data_path = os.path.join(self.traj_dir, "obs_map9.npy")
+        act_data_path = os.path.join(self.traj_dir, "act_map9.npy")
 
         if not os.path.exists(obs_data_path) or not os.path.exists(act_data_path):
             raise FileNotFoundError(f"Training data not found in {self.traj_dir}.")
