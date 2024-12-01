@@ -53,7 +53,7 @@ def get_args():
     Note that this will used for evaluation by the server as well.
     You can add any arguments you want.
     """
-    parser.add_argument("--model_name", default="last_model.pkl", type=str, help="Model name to save and use")
+    parser.add_argument("--model_name", default="best_model.pkl", type=str, help="Model name to save and use")
     ###################################################
     ###################################################
     
@@ -182,8 +182,8 @@ class RCCarPolicy(Node):
         """
         
         # Load training data
-        obs_data_path = os.path.join(self.traj_dir, "obs_map9.npy")
-        act_data_path = os.path.join(self.traj_dir, "act_map9.npy")
+        obs_data_path = os.path.join(self.traj_dir, "obs_map_5917.npy")
+        act_data_path = os.path.join(self.traj_dir, "act_map_5917.npy")
 
         if not os.path.exists(obs_data_path) or not os.path.exists(act_data_path):
             raise FileNotFoundError(f"Training data not found in {self.traj_dir}.")
