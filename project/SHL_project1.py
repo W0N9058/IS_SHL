@@ -93,7 +93,7 @@ class PurePursuit(Node):
             Also, Recommend set Ki extremely low.
         """
         #self.Kp = 1.32
-        self.Kp = 0.9
+        self.Kp = 0.8
         self.Ki = 0.005
         self.Kd = 0.05
         ###################################################
@@ -258,8 +258,8 @@ class PurePursuit(Node):
                         """
                         Save trajectory when terminated at 'args.traj_dir'.
                         """
-                        np.save(os.path.join(self.traj_dir, "obs_map5.npy"), np.array(obs_list))
-                        np.save(os.path.join(self.traj_dir, "act_map5.npy"), np.array(act_list))
+                        np.save(os.path.join(self.traj_dir, "obs_map17.npy"), np.array(obs_list))
+                        np.save(os.path.join(self.traj_dir, "act_map17.npy"), np.array(act_list))
                         ###################################################
                         ###################################################
                         self.get_logger().info(">>> map {} trajectory saved".format(map))
