@@ -93,8 +93,8 @@ class PurePursuit(Node):
             Also, Recommend set Ki extremely low.
         """
         #self.Kp = 1.32
-        self.Kp = 0.8
-        self.Ki = 0.005
+        self.Kp = 0.9
+        self.Ki = 0.0
         self.Kd = 0.05
         ###################################################
         ###################################################
