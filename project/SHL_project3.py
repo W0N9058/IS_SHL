@@ -53,7 +53,7 @@ def get_args():
     Note that this will used for evaluation by the server as well.
     You can add any arguments you want.
     """
-    parser.add_argument("--model_name", default="best_model_517.pkl", type=str, help="Model name to save and use")
+    parser.add_argument("--model_name", default="last_model_517.pkl", type=str, help="Model name to save and use")
     ###################################################
     ###################################################
     
@@ -264,10 +264,10 @@ class RCCarPolicy(Node):
         torch.save(self.policy.state_dict(), self.model_path)
         self.get_logger().info(f">>> Last model saved as {self.model_path}")
         
-        np.save(os.path.join(self.model_dir, "obs_mean_b_517.npy"), self.obs_mean)
-        np.save(os.path.join(self.model_dir, "obs_std_b_517.npy"), self.obs_std)
-        np.save(os.path.join(self.model_dir, "act_mean_b_517.npy"), self.act_mean)
-        np.save(os.path.join(self.model_dir, "act_std_b_517.npy"), self.act_std)
+        np.save(os.path.join(self.model_dir, "obs_mean_l_517.npy"), self.obs_mean)
+        np.save(os.path.join(self.model_dir, "obs_std_l_517.npy"), self.obs_std)
+        np.save(os.path.join(self.model_dir, "act_mean_l_517.npy"), self.act_mean)
+        np.save(os.path.join(self.model_dir, "act_std_l_517.npy"), self.act_std)
 
     def load(self):
         """
@@ -277,10 +277,10 @@ class RCCarPolicy(Node):
         if self.mode == 'val':
             assert os.path.exists(self.model_path)
             self.policy.load_state_dict(torch.load(self.model_path, weights_only=True))
-            self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_b_517.npy"))
-            self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_b_517.npy"))
-            self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_b_517.npy"))
-            self.act_std = np.load(os.path.join(self.model_dir, "act_std_b_517.npy"))
+            self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_l_517.npy"))
+            self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_l_517.npy"))
+            self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_l_517.npy"))
+            self.act_std = np.load(os.path.join(self.model_dir, "act_std_l_517.npy"))
         elif self.mode == 'train':
             pass
         else:
