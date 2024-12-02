@@ -94,8 +94,8 @@ class PurePursuit(Node):
         """
         #self.Kp = 1.32
         self.Kp = 0.9
-        self.Ki = 0.005
-        self.Kd = 0.0
+        self.Ki = 0.0
+        self.Kd = 0.05
         ###################################################
         ###################################################
         self.get_logger().info(">>> Running Project 1 for TEAM {}".format(TEAM_NAME))
