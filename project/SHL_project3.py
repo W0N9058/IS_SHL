@@ -53,7 +53,7 @@ def get_args():
     Note that this will used for evaluation by the server as well.
     You can add any arguments you want.
     """
-    parser.add_argument("--model_name", default="last_model16.pkl", type=str, help="Model name to save and use")
+    parser.add_argument("--model_name", default="last_model13.pkl", type=str, help="Model name to save and use")
     ###################################################
     ###################################################
     
@@ -209,8 +209,8 @@ class RCCarPolicy(Node):
         """
         
         # Load training data
-        obs_data_path = os.path.join(self.traj_dir, "obs_map16.npy")
-        act_data_path = os.path.join(self.traj_dir, "act_map16.npy")
+        obs_data_path = os.path.join(self.traj_dir, "obs_map13.npy")
+        act_data_path = os.path.join(self.traj_dir, "act_map13.npy")
 
         if not os.path.exists(obs_data_path) or not os.path.exists(act_data_path):
             raise FileNotFoundError(f"Training data not found in {self.traj_dir}.")
@@ -237,7 +237,7 @@ class RCCarPolicy(Node):
         num_epochs = 200
         batch_size = 128
         best_loss = float('inf')  # Initialize to a large value
-        best_model_path = os.path.join(self.model_dir, "best_model16.pkl")
+        best_model_path = os.path.join(self.model_dir, "best_model13.pkl")
 
         for epoch in range(num_epochs):
             np.random.seed(self.args.seed + epoch)
@@ -292,10 +292,10 @@ class RCCarPolicy(Node):
         torch.save(self.policy.state_dict(), self.model_path)
         self.get_logger().info(f">>> Last model saved as {self.model_path}")
         
-        np.save(os.path.join(self.model_dir, "obs_mean_16.npy"), self.obs_mean)
-        np.save(os.path.join(self.model_dir, "obs_std_16.npy"), self.obs_std)
-        np.save(os.path.join(self.model_dir, "act_mean_16.npy"), self.act_mean)
-        np.save(os.path.join(self.model_dir, "act_std_16.npy"), self.act_std)
+        np.save(os.path.join(self.model_dir, "obs_mean_13.npy"), self.obs_mean)
+        np.save(os.path.join(self.model_dir, "obs_std_13.npy"), self.obs_std)
+        np.save(os.path.join(self.model_dir, "act_mean_13.npy"), self.act_mean)
+        np.save(os.path.join(self.model_dir, "act_std_13.npy"), self.act_std)
 
     def load(self):
         """
@@ -305,10 +305,10 @@ class RCCarPolicy(Node):
         if self.mode == 'val':
             assert os.path.exists(self.model_path)
             self.policy.load_state_dict(torch.load(self.model_path, weights_only=True))
-            self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_16.npy"))
-            self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_16.npy"))
-            self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_16.npy"))
-            self.act_std = np.load(os.path.join(self.model_dir, "act_std_16.npy"))
+            self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_13.npy"))
+            self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_13.npy"))
+            self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_13.npy"))
+            self.act_std = np.load(os.path.join(self.model_dir, "act_std_13.npy"))
         elif self.mode == 'train':
             pass
         else:
