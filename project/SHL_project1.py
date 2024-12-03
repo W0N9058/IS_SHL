@@ -258,8 +258,8 @@ class PurePursuit(Node):
                         """
                         Save trajectory when terminated at 'args.traj_dir'.
                         """
-                        np.save(os.path.join(self.traj_dir, "obs_map18.npy"), np.array(obs_list))
-                        np.save(os.path.join(self.traj_dir, "act_map18.npy"), np.array(act_list))
+                        np.save(os.path.join(self.traj_dir, "obs_map19.npy"), np.array(obs_list))
+                        np.save(os.path.join(self.traj_dir, "act_map19.npy"), np.array(act_list))
                         ###################################################
                         ###################################################
                         self.get_logger().info(">>> map {} trajectory saved".format(map))
