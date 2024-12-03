@@ -53,7 +53,7 @@ def get_args():
     Note that this will used for evaluation by the server as well.
     You can add any arguments you want.
     """
-    parser.add_argument("--model_name", default="last_model17.pkl", type=str, help="Model name to save and use")
+    parser.add_argument("--model_name", default="last_model_17.pkl", type=str, help="Model name to save and use")
     ###################################################
     ###################################################
     
@@ -104,27 +104,58 @@ class PPOPolicy(nn.Module):
     def __init__(self, obs_dim, act_dim):
         super(PPOPolicy, self).__init__()
         self.policy_mean = nn.Sequential(
-            nn.Linear(obs_dim, 512),
+            nn.Linear(obs_dim, 1024),
+            nn.BatchNorm1d(1024),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Linear(1024, 512),
             nn.ReLU(),
+            nn.Dropout(0.3),
             nn.Linear(512, act_dim)
         )
         self.policy_std = nn.Sequential(
-            nn.Linear(obs_dim, 512),
+            nn.Linear(obs_dim, 1024),
+            nn.BatchNorm1d(1024),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Linear(1024, 512),
             nn.ReLU(),
+            nn.Dropout(0.3),
             nn.Linear(512, act_dim),
             nn.Softplus()
         )
         self.value_net = nn.Sequential(
-            nn.Linear(obs_dim, 512),
+            nn.Linear(obs_dim, 1024),
+            nn.BatchNorm1d(1024),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Linear(1024, 512),
             nn.ReLU(),
+            nn.Dropout(0.3),
             nn.Linear(512, 1)
         )
+
+    #def __init__(self, obs_dim, act_dim):
+    #    super(PPOPolicy, self).__init__()
+    #    self.policy_mean = nn.Sequential(
+    #        nn.Linear(obs_dim, 512),
+    #        nn.ReLU(),
+    #        nn.Linear(512, 512),
+    #        nn.ReLU(),
+    #        nn.Linear(512, act_dim)
+    #    )
+    #    self.policy_std = nn.Sequential(
+    #        nn.Linear(obs_dim, 512),
+    #        nn.ReLU(),
+    #        nn.Linear(512, 512),
+    #        nn.ReLU(),
+    #        nn.Linear(512, act_dim),
+    #        nn.Softplus()
+    #    )
+    #    self.value_net = nn.Sequential(
+    #        nn.Linear(obs_dim, 512),
+    #        nn.ReLU(),
+    #        nn.Linear(512, 512),
+    #        nn.ReLU(),
+    #        nn.Linear(512, 1)
+    #    )
 
     def forward(self, obs):
         mean = self.policy_mean(obs)
@@ -163,12 +194,11 @@ class RCCarPolicy(Node):
         self.obs_dim = 720  # Assuming 720-dimensional LiDAR scan
         self.act_dim = 2    # Assuming 2 action dimensions: steer and speed
         self.policy = PPOPolicy(self.obs_dim, self.act_dim)
-        self.optimizer = optim.Adam(self.policy.parameters(), lr=1e-4, weight_decay=1e-5)
-        #self.optimizer = optim.AdamW(self.policy.parameters(), lr=3e-4, weight_decay=1e-4)
+        #self.optimizer = optim.Adam(self.policy.parameters(), lr=1e-4, weight_decay=1e-5)
+        self.optimizer = optim.AdamW(self.policy.parameters(), lr=1e-4, weight_decay=1e-5)
         #self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=100, eta_min=1e-6)
         #self.scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(self.optimizer, T_0=50, T_mult=2, eta_min=1e-6)
-        #self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.7)
-        self.mse_loss = nn.MSELoss()
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=100, gamma=0.5)
 
         self.load()
         self.get_logger().info(">>> Running Project 3 for TEAM {}".format(TEAM_NAME))
@@ -207,10 +237,10 @@ class RCCarPolicy(Node):
         act_tensor = torch.tensor(act_data, dtype=torch.float32)
 
         # Training loop
-        num_epochs = 200
-        batch_size = 128
+        num_epochs = 500
+        batch_size = 64
         best_loss = float('inf')  # Initialize to a large value
-        best_model_path = os.path.join(self.model_dir, "best_model17.pkl")
+        best_model_path = os.path.join(self.model_dir, "best_model_17.pkl")
 
         for epoch in range(num_epochs):
             np.random.seed(self.args.seed + epoch)
@@ -250,7 +280,8 @@ class RCCarPolicy(Node):
                 #self.prev_act_batch = act_batch
 
                 epoch_loss += loss.item()  # Accumulate loss for the epoch
-
+            
+            self.scheduler.step()
             epoch_loss /= (len(indices) / batch_size)  # Average loss for the epoch
             self.get_logger().info(f"Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss}")
 
@@ -264,10 +295,10 @@ class RCCarPolicy(Node):
         torch.save(self.policy.state_dict(), self.model_path)
         self.get_logger().info(f">>> Last model saved as {self.model_path}")
         
-        np.save(os.path.join(self.model_dir, "obs_mean_l17.npy"), self.obs_mean)
-        np.save(os.path.join(self.model_dir, "obs_std_l17.npy"), self.obs_std)
-        np.save(os.path.join(self.model_dir, "act_mean_l17.npy"), self.act_mean)
-        np.save(os.path.join(self.model_dir, "act_std_l17.npy"), self.act_std)
+        np.save(os.path.join(self.model_dir, "obs_mean_l_17.npy"), self.obs_mean)
+        np.save(os.path.join(self.model_dir, "obs_std_l_17.npy"), self.obs_std)
+        np.save(os.path.join(self.model_dir, "act_mean_l_17.npy"), self.act_mean)
+        np.save(os.path.join(self.model_dir, "act_std_l_17.npy"), self.act_std)
 
     def load(self):
         """
@@ -277,10 +308,10 @@ class RCCarPolicy(Node):
         if self.mode == 'val':
             assert os.path.exists(self.model_path)
             self.policy.load_state_dict(torch.load(self.model_path, weights_only=True))
-            self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_l17.npy"))
-            self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_l17.npy"))
-            self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_l17.npy"))
-            self.act_std = np.load(os.path.join(self.model_dir, "act_std_l17.npy"))
+            self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_l_17.npy"))
+            self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_l_17.npy"))
+            self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_l_17.npy"))
+            self.act_std = np.load(os.path.join(self.model_dir, "act_std_l_17.npy"))
         elif self.mode == 'train':
             pass
         else:

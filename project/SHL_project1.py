@@ -93,9 +93,9 @@ class PurePursuit(Node):
             Also, Recommend set Ki extremely low.
         """
         #self.Kp = 1.32
-        self.Kp = 1.35
+        self.Kp = 0.9
         self.Ki = 0.0
-        self.Kd = 0.03
+        self.Kd = 0.05
         ###################################################
         ###################################################
         self.get_logger().info(">>> Running Project 1 for TEAM {}".format(TEAM_NAME))
