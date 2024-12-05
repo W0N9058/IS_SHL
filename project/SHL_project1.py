@@ -80,7 +80,7 @@ class PurePursuit(Node):
         self.render = args.render
         self.time_limit = 180.0
         
-        self.lookahead = 10
+        self.lookahead = 20
 
         self.save = args.save
         self.traj_dir = args.traj_dir
@@ -258,8 +258,8 @@ class PurePursuit(Node):
                         """
                         Save trajectory when terminated at 'args.traj_dir'.
                         """
-                        np.save(os.path.join(self.traj_dir, "obs_map13.npy"), np.array(obs_list))
-                        np.save(os.path.join(self.traj_dir, "act_map13.npy"), np.array(act_list))
+                        np.save(os.path.join(self.traj_dir, "obs_map19.npy"), np.array(obs_list))
+                        np.save(os.path.join(self.traj_dir, "act_map19.npy"), np.array(act_list))
                         ###################################################
                         ###################################################
                         self.get_logger().info(">>> map {} trajectory saved".format(map))
