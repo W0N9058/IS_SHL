@@ -80,7 +80,7 @@ class PurePursuit(Node):
         self.render = args.render
         self.time_limit = 180.0
         
-        self.lookahead = 20
+        self.lookahead = 30
 
         self.save = args.save
         self.traj_dir = args.traj_dir
@@ -93,7 +93,7 @@ class PurePursuit(Node):
             Also, Recommend set Ki extremely low.
         """
         #self.Kp = 1.32
-        self.Kp = 0.9
+        self.Kp = 0.6
         self.Ki = 0.0
         self.Kd = 0.05
         ###################################################
