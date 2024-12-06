@@ -202,24 +202,8 @@ class PurePursuit(Node):
                 steer = np.clip(steer, -self.max_steer, self.max_steer)
                 prev_err = curr_err
                 
-                #if abs(curr_err) < 0.04:  # Dead zone to prevent small oscillations
-                #    steer = 0.0
-                #else:
-                #    if prev_err is not None:
-                #        d_err = (curr_err - prev_err) / self.dt
-                #    else:
-                #        d_err = 0.0
-                #    sum_err += curr_err * self.dt
-                #    steer = self.Kp * curr_err + self.Ki * sum_err + self.Kd * d_err
-                #    steer = np.clip(steer, -self.max_steer, self.max_steer)
-                #prev_err = curr_err
-                
                 # 4) Calculate the appropriate speed based on the steering angle
-                #speed = max(self.min_speed, self.max_speed * (1 - abs(steer) / self.max_steer))
-                #speed = max(self.max_speed, self.max_speed * (1 - abs(steer) / self.max_steer))
                 speed = self.max_speed
-                #speed = self.max_speed * (1 - 0.9 * abs(steer) / self.max_steer)
-                #speed = self.max_speed * 0.8 * (1 - 0.99 * abs(steer) / self.max_steer)
                 speed = np.clip(speed, self.min_speed, self.max_speed)
                 ###################################################
                 ###################################################
@@ -228,7 +212,7 @@ class PurePursuit(Node):
                 
                 obs_list.append(scan)
                 act_list.append([steer, speed])             
-   
+
                 step += 1
                 
                 if self.render:
@@ -258,11 +242,15 @@ class PurePursuit(Node):
                         """
                         Save trajectory when terminated at 'args.traj_dir'.
                         """
-                        np.save(os.path.join(self.traj_dir, "obs_map13.npy"), np.array(obs_list))
-                        np.save(os.path.join(self.traj_dir, "act_map13.npy"), np.array(act_list))
+                        # 파일 이름을 맵 이름과 트라이얼 번호로 동적으로 생성
+                        obs_filename = f"obs_{map}_trial{trial}.npy"
+                        act_filename = f"act_{map}_trial{trial}.npy"
+                        
+                        np.save(os.path.join(self.traj_dir, obs_filename), np.array(obs_list))
+                        np.save(os.path.join(self.traj_dir, act_filename), np.array(act_list))
                         ###################################################
                         ###################################################
-                        self.get_logger().info(">>> map {} trajectory saved".format(map))
+                        self.get_logger().info(f">>> map {map} trajectory saved as {obs_filename} and {act_filename}")
                     
                     END_TIME = time.time()
                     result_msg.id = id
@@ -275,7 +263,7 @@ class PurePursuit(Node):
                     if info['waypoint'] == 20:
                         result_msg.success = True
                         result_msg.fail_type = "-"
-                        self.get_logger().info(f">>> Success: {map}, Time Taken: {END_TIME - START_TIME:.2f} seconds")#changed
+                        self.get_logger().info(f">>> Success: {map}, Time Taken: {END_TIME - START_TIME:.2f} seconds")
                     else:
                         result_msg.success = False
                         result_msg.fail_type = "Collision"
@@ -283,7 +271,7 @@ class PurePursuit(Node):
                     self.result_pub.publish(result_msg)
                     env.close()
                     break
-        except:
+        except Exception as e:  # 구체적인 예외 처리를 위해 Exception을 명시적으로 잡습니다.
             END_TIME = time.time()
             result_msg.id = id
             result_msg.team = team
@@ -294,7 +282,7 @@ class PurePursuit(Node):
             result_msg.n_waypoints = 20
             result_msg.success = False
             result_msg.fail_type = "Script Error"
-            self.get_logger().info(">>> Script Error")
+            self.get_logger().error(f">>> Script Error: {e}")
             self.result_pub.publish(result_msg)
         
         if exit:

@@ -26,6 +26,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import random
+import glob
 
 TEAM_NAME = "SHL"
 
@@ -172,20 +173,48 @@ class RCCarPolicy(Node):
         
     def train(self):
         self.get_logger().info(">>> Start model training")
-        # demonstration data를 불러와서 actor를 모사학습
-        obs_data_path = os.path.join(self.traj_dir, "obs_map2.npy")
-        act_data_path = os.path.join(self.traj_dir, "act_map2.npy")
-
-        if not os.path.exists(obs_data_path) or not os.path.exists(act_data_path):
-            raise FileNotFoundError(f"Training data not found in {self.traj_dir}.")
-
-        obs_data = np.load(obs_data_path)
-        act_data = np.load(act_data_path)
-
+        
+            # traj_dir 내의 모든 obs_*.npy 파일 찾기
+        obs_files = glob.glob(os.path.join(self.traj_dir, "obs_*.npy"))
+        act_files = glob.glob(os.path.join(self.traj_dir, "act_*.npy"))
+        
+        # 파일 이름을 기준으로 매칭 (예: obs_map1.npy ↔ act_map1.npy)
+        obs_files_sorted = sorted(obs_files)
+        act_files_sorted = sorted(act_files)
+        
+        # 매칭된 파일 쌍 확인
+        data_pairs = []
+        for obs_file in obs_files_sorted:
+            # obs 파일 이름에서 'obs_'를 'act_'로 변경하여 act 파일 찾기
+            act_file = obs_file.replace("obs_", "act_")
+            if act_file in act_files_sorted:
+                data_pairs.append((obs_file, act_file))
+            else:
+                self.get_logger().warning(f"No matching action file for {obs_file}. Skipping.")
+        
+        if not data_pairs:
+            raise FileNotFoundError(f"No matching obs/act file pairs found in {self.traj_dir}.")
+        
+        # 모든 obs 및 act 데이터를 로드하여 리스트에 저장
+        all_obs = []
+        all_act = []
+        
+        for obs_file, act_file in data_pairs:
+            obs_data = np.load(obs_file)
+            act_data = np.load(act_file)
+            all_obs.append(obs_data)
+            all_act.append(act_data)
+        
+        # 리스트를 하나의 배열로 결합
+        obs_data = np.concatenate(all_obs, axis=0)
+        act_data = np.concatenate(all_act, axis=0)
+        ###################################################
+        
         # Normalize
         self.obs_mean, self.obs_std = obs_data.mean(axis=0), obs_data.std(axis=0)
         self.act_mean, self.act_std = act_data.mean(axis=0), act_data.std(axis=0)
 
+        # std가 0인 경우 방지
         self.obs_std[self.obs_std == 0] = 1e-4
         self.act_std[self.act_std == 0] = 1e-4
 
