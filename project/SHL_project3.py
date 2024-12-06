@@ -4,7 +4,6 @@ import argparse
 import numpy as np
 from ruamel.yaml import YAML
 from easydict import EasyDict
-import pickle
 
 import rclpy
 from rclpy.node import Node
@@ -13,14 +12,8 @@ from ament_index_python.packages import get_package_prefix
 from message.msg import Result, Query
 from rccar_gym.env_wrapper import RCCarWrapper
 
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.distributions import Normal
-import random
-
 ###################################################
-########## YOU CAN ONLY CHANGE THIS PART ##########
+########## YOU CAN ONLY CHANGE THIS PART  #########
 
 """
 Freely import modules, define methods and classes, etc.
@@ -29,7 +22,40 @@ To use particular modules, please let TA know to install them on the evaluation 
 If you want to use a deep-learning library, please use pytorch.
 """
 
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import random
+
 TEAM_NAME = "SHL"
+
+# DDPG Actor, Critic 정의
+class DDPGActor(nn.Module):
+    def __init__(self, obs_dim, act_dim):
+        super(DDPGActor, self).__init__()
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, act_dim)
+        )
+
+    def forward(self, obs):
+        return self.net(obs)
+
+class DDPGCritic(nn.Module):
+    def __init__(self, obs_dim, act_dim):
+        super(DDPGCritic, self).__init__()
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim + act_dim, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1)
+        )
+    def forward(self, obs, act):
+        return self.net(torch.cat([obs, act], dim=-1))
 
 ###################################################
 ###################################################
@@ -38,8 +64,8 @@ TEAM_NAME = "SHL"
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', default=42, type=int, help="Set seed number.")
-    parser.add_argument("--env_config", default="configs/env.yaml", type=str, help="Path to environment config file (.yaml)")
-    parser.add_argument("--dynamic_config", default="configs/dynamic.yaml", type=str, help="Path to dynamic config file (.yaml)")
+    parser.add_argument("--env_config", default="configs/env.yaml", type=str, help="Path to environment config file (.yaml)") # or ../..
+    parser.add_argument("--dynamic_config", default="configs/dynamic.yaml", type=str, help="Path to dynamic config file (.yaml)") # or ../..
     parser.add_argument("--render", default=True, action='store_true', help="Whether to render or not.")
     parser.add_argument("--no_render", default=False, action='store_true', help="No rendering.")
     parser.add_argument("--mode", default='val', type=str, help="Whether train new model or not")
@@ -53,36 +79,27 @@ def get_args():
     Note that this will used for evaluation by the server as well.
     You can add any arguments you want.
     """
-    parser.add_argument("--model_name", default="last_model13.pkl", type=str, help="Model name to save and use")
+    parser.add_argument("--model_name", default="model.pkl", type=str, help="model name to save and use")
     ###################################################
     ###################################################
     
     args = parser.parse_args()
     args = EasyDict(vars(args))
     
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(args.seed)
-        
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
     # render
     if args.no_render:
         args.render = False
-
+    
     ws_path = os.path.join(get_package_prefix('rccar_bringup'), "../..")
 
     # map files
     args.maps = os.path.join(ws_path, 'maps')
     args.maps = [map for map in os.listdir(args.maps) if os.path.isdir(os.path.join(args.maps, map))]
-
+    
     # configuration files
     args.env_config = os.path.join(ws_path, args.env_config)
     args.dynamic_config = os.path.join(ws_path, args.dynamic_config)
-
+    
     with open(args.env_config, 'r') as f:
         task_args = EasyDict(YAML().load(f))
     with open(args.dynamic_config, 'r') as f:
@@ -90,7 +107,7 @@ def get_args():
 
     args.update(task_args)
     args.update(dynamic_args)
-
+    
     # Trajectory & Model Path
     project_path = os.path.join(ws_path, f"src/rccar_bringup/rccar_bringup/project/IS_{TEAM_NAME}/project")
     args.traj_dir = os.path.join(project_path, args.traj_dir)
@@ -98,71 +115,6 @@ def get_args():
     args.model_path = os.path.join(args.model_dir, args.model_name)
 
     return args
-
-
-class PPOPolicy(nn.Module):
-    #def __init__(self, obs_dim, act_dim):
-    #    super(PPOPolicy, self).__init__()
-    #    self.policy_mean = nn.Sequential(
-    #        nn.Linear(obs_dim, 1024),
-    #        nn.ReLU(),
-    #        nn.Linear(1024, 512),
-    #        nn.ReLU(),
-    #        nn.Dropout(0.3),
-    #        nn.Linear(512, act_dim)
-    #    )
-    #    self.policy_std = nn.Sequential(
-    #        nn.Linear(obs_dim, 1024),
-    #        nn.ReLU(),
-    #        nn.Linear(1024, 512),
-    #        nn.ReLU(),
-    #        nn.Dropout(0.3),
-    #        nn.Linear(512, act_dim),
-    #        nn.Softplus()
-    #    )
-    #    self.value_net = nn.Sequential(
-    #        nn.Linear(obs_dim, 1024),
-    #        nn.ReLU(),
-    #        nn.Linear(1024, 512),
-    #        nn.ReLU(),
-    #        nn.Dropout(0.3),
-    #        nn.Linear(512, 1)
-    #    )
-
-    def __init__(self, obs_dim, act_dim):
-        super(PPOPolicy, self).__init__()
-        self.policy_mean = nn.Sequential(
-            nn.Linear(obs_dim, 512),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(512, act_dim)
-        )
-        self.log_std = nn.Parameter(torch.zeros(act_dim))
-        #self.policy_std = nn.Sequential(
-        #    nn.Linear(obs_dim, 512),
-        #    nn.ReLU(),
-        #    nn.Linear(512, 512),
-        #    nn.ReLU(),
-        #    nn.Linear(512, act_dim),
-        #    nn.Softplus()
-        #)
-        self.value_net = nn.Sequential(
-            nn.Linear(obs_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 1)
-        )
-
-    def forward(self, obs):
-        mean = self.policy_mean(obs)
-        #std = self.policy_std(obs)
-        std = torch.exp(self.log_std)
-        value = self.value_net(obs)
-        return mean, std, value
 
 
 class RCCarPolicy(Node):
@@ -178,7 +130,7 @@ class RCCarPolicy(Node):
         self.max_speed = args.max_speed
         self.min_speed = args.min_speed
         self.max_steer = args.max_steer
-        self.maps = args.maps
+        self.maps = args.maps 
         self.render = args.render
         self.time_limit = 180.0
 
@@ -186,36 +138,43 @@ class RCCarPolicy(Node):
         self.model_dir = args.model_dir
         self.model_name = args.model_name
         self.model_path = args.model_path
-        
-    ###################################################
-    ########## YOU CAN ONLY CHANGE THIS PART ##########
-        """
-        Freely change the codes to increase the performance.
-        """
-        
-        self.obs_dim = 720  # Assuming 720-dimensional LiDAR scan
-        self.act_dim = 2    # Assuming 2 action dimensions: steer and speed
-        self.policy = PPOPolicy(self.obs_dim, self.act_dim)
-        self.optimizer = optim.Adam(self.policy.parameters(), lr=1e-4, weight_decay=1e-5)
-        #self.optimizer = optim.AdamW(self.policy.parameters(), lr=1e-4, weight_decay=1e-5)
-        #self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=100, eta_min=1e-6)
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(self.optimizer, T_0=10, T_mult=2, eta_min=1e-6)
-        #self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=100, gamma=0.5)
+
+        ###################################################
+        ########## YOU CAN ONLY CHANGE THIS PART ##########
+
+        random.seed(self.args.seed)
+        np.random.seed(self.args.seed)
+        torch.manual_seed(self.args.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(self.args.seed)
+
+        # DDPG를 위한 설정
+        self.obs_dim = 720  # scan dimension
+        self.act_dim = 2   # [steer, speed]
+
+        # Actor, Critic 정의
+        self.actor = DDPGActor(self.obs_dim, self.act_dim)
+        self.critic = DDPGCritic(self.obs_dim, self.act_dim)
+
+        # Actor 학습용 옵티마이저 (demonstration 기반 imitation)
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=1e-4)
+
+        # 초기값 (train 시 사용)
+        self.obs_mean = None
+        self.obs_std = None
+        self.act_mean = None
+        self.act_std = None
 
         self.load()
         self.get_logger().info(">>> Running Project 3 for TEAM {}".format(TEAM_NAME))
-        self.prev_act_batch = None
-    
+        ###################################################
+        ###################################################
+        
     def train(self):
         self.get_logger().info(">>> Start model training")
-        """
-        Train and save your model.
-        You can either use this part or explicitly train using other python codes.
-        """
-        
-        # Load training data
-        obs_data_path = os.path.join(self.traj_dir, "obs_map13.npy")
-        act_data_path = os.path.join(self.traj_dir, "act_map13.npy")
+        # demonstration data를 불러와서 actor를 모사학습
+        obs_data_path = os.path.join(self.traj_dir, "obs_map2.npy")
+        act_data_path = os.path.join(self.traj_dir, "act_map2.npy")
 
         if not os.path.exists(obs_data_path) or not os.path.exists(act_data_path):
             raise FileNotFoundError(f"Training data not found in {self.traj_dir}.")
@@ -223,139 +182,107 @@ class RCCarPolicy(Node):
         obs_data = np.load(obs_data_path)
         act_data = np.load(act_data_path)
 
-        self.get_logger().info(f"Loaded training data: {obs_data.shape[0]} samples.")
-
-        # Normalize the data
+        # Normalize
         self.obs_mean, self.obs_std = obs_data.mean(axis=0), obs_data.std(axis=0)
         self.act_mean, self.act_std = act_data.mean(axis=0), act_data.std(axis=0)
 
         self.obs_std[self.obs_std == 0] = 1e-4
         self.act_std[self.act_std == 0] = 1e-4
-    
-        obs_data = (obs_data - self.obs_mean) / self.obs_std
-        act_data = (act_data - self.act_mean) / self.act_std
 
-        obs_tensor = torch.tensor(obs_data, dtype=torch.float32)
-        act_tensor = torch.tensor(act_data, dtype=torch.float32)
+        obs_data_norm = (obs_data - self.obs_mean) / self.obs_std
+        act_data_norm = (act_data - self.act_mean) / self.act_std
 
-        # Training loop
-        num_epochs = 200
-        batch_size = 64
-        best_loss = float('inf')  # Initialize to a large value
-        best_model_path = os.path.join(self.model_dir, "best_model13.pkl")
+        obs_tensor = torch.tensor(obs_data_norm, dtype=torch.float32)
+        act_tensor = torch.tensor(act_data_norm, dtype=torch.float32)
+
+        num_epochs = 500
+        batch_size = 128
+        best_loss = float('inf')
+        best_model_path = os.path.join(self.model_dir, "best_ddpg_model.pkl")
 
         for epoch in range(num_epochs):
-            np.random.seed(self.args.seed + epoch)
-            indices = np.arange(obs_data.shape[0])
+            indices = np.arange(obs_tensor.size(0))
             np.random.shuffle(indices)
 
-            epoch_loss = 0  # To track total loss for this epoch
+            epoch_loss = 0.0
             for i in range(0, len(indices), batch_size):
-                batch_indices = indices[i:i + batch_size]
+                batch_indices = indices[i:i+batch_size]
                 obs_batch = obs_tensor[batch_indices]
                 act_batch = act_tensor[batch_indices]
 
-                mean, std, _ = self.policy(obs_batch)
-                dist = Normal(mean, std)
-                log_probs = dist.log_prob(act_batch).abs()
-                
-                #log_probs_loss = log_probs.sum(dim=-1).mean()
-                #if self.prev_act_batch is not None:
-                #    min_size = min(act_batch.size(0), self.prev_act_batch.size(0))
-                #    steer_change = act_batch[:min_size, 0] - self.prev_act_batch[:min_size, 0] 
-                #    steer_penalty = (steer_change ** 2).mean()
-                #else:
-                #    steer_penalty = 0.0
-                #lambda_penalty = 0.3
-                #loss = log_probs_loss + lambda_penalty * steer_penalty
-                
-                loss = log_probs.sum(dim=-1).mean()
-                
-                #steer_weight = torch.abs(act_batch[:, 0]) / self.max_steer
-                #weighted_log_probs = log_probs[:, 0] * steer_weight + log_probs[:, 1]
-                #loss = weighted_log_probs.mean()
+                pred_act = self.actor(obs_batch)
+                loss = ((pred_act - act_batch)**2).mean()
 
-                self.optimizer.zero_grad()
+                self.actor_optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), max_norm=1.0)
-                self.optimizer.step()
-                #self.scheduler.step()
-                #self.prev_act_batch = act_batch
+                self.actor_optimizer.step()
 
-                epoch_loss += loss.item()  # Accumulate loss for the epoch
-            
-            epoch_loss /= (len(indices) / batch_size)  # Average loss for the epoch
-            self.scheduler.step()
-            self.get_logger().info(f"Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss}")
+                epoch_loss += loss.item()
+            epoch_loss /= (len(indices)/batch_size)
+            self.get_logger().info(f"Epoch [{epoch+1}/{num_epochs}] Loss: {epoch_loss}")
 
-            # Save the best model
             if epoch_loss < best_loss:
                 best_loss = epoch_loss
-                torch.save(self.policy.state_dict(), best_model_path)
-                self.get_logger().info(f">>> New best model saved with loss: {best_loss}")
+                torch.save(self.actor.state_dict(), best_model_path)
+                self.get_logger().info(f"New Best Model Saved at {best_model_path} Loss: {best_loss}")
 
-        # Save the last model
-        torch.save(self.policy.state_dict(), self.model_path)
-        self.get_logger().info(f">>> Last model saved as {self.model_path}")
-        
-        np.save(os.path.join(self.model_dir, "obs_mean_13.npy"), self.obs_mean)
-        np.save(os.path.join(self.model_dir, "obs_std_13.npy"), self.obs_std)
-        np.save(os.path.join(self.model_dir, "act_mean_13.npy"), self.act_mean)
-        np.save(os.path.join(self.model_dir, "act_std_13.npy"), self.act_std)
-
+        # 최종 모델 저장
+        torch.save(self.actor.state_dict(), self.model_path)
+        np.save(os.path.join(self.model_dir, "obs_mean_2.npy"), self.obs_mean)
+        np.save(os.path.join(self.model_dir, "obs_std_2.npy"), self.obs_std)
+        np.save(os.path.join(self.model_dir, "act_mean_2.npy"), self.act_mean)
+        np.save(os.path.join(self.model_dir, "act_std_2.npy"), self.act_std)
+        self.get_logger().info(">>> Trained model {} is saved".format(self.model_name))
+            
     def load(self):
-        """
-        Load your trained model.
-        Make sure not to train a new model when self.mode == 'val'.
-        """
         if self.mode == 'val':
             assert os.path.exists(self.model_path)
-            self.policy.load_state_dict(torch.load(self.model_path, weights_only=True))
-            self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_13.npy"))
-            self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_13.npy"))
-            self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_13.npy"))
-            self.act_std = np.load(os.path.join(self.model_dir, "act_std_13.npy"))
+            self.actor.load_state_dict(torch.load(self.model_path))
+            self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_2.npy"))
+            self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_2.npy"))
+            self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_2.npy"))
+            self.act_std = np.load(os.path.join(self.model_dir, "act_std_2.npy"))
         elif self.mode == 'train':
             pass
         else:
-            raise ValueError("Mode should be 'train' or 'val'.")
+            raise AssertionError("mode should be one of 'train' or 'val'.")   
 
     def get_action(self, obs):
-        """
-        Predict action using obs - 'scan' data.
-        Be sure to satisfy the limitation of steer and speed values.
-        """
-        #self.policy.eval()
-        obs = torch.tensor(obs, dtype=torch.float32)
+        # obs를 정규화하고 actor로부터 deterministic action 산출
+        if self.obs_mean is None or self.obs_std is None:
+            # 모델이 로드되지 않은 경우 기본값 사용
+            # 여기서는 편의상 zero mean, one std 가정
+            self.obs_mean = np.zeros(self.obs_dim)
+            self.obs_std = np.ones(self.obs_dim)
+            self.act_mean = np.zeros(self.act_dim)
+            self.act_std = np.ones(self.act_dim)
+
+        obs = torch.tensor((obs - self.obs_mean)/self.obs_std, dtype=torch.float32)
         with torch.no_grad():
-            obs = (obs - self.obs_mean) / self.obs_std
-            mean, std, _ = self.policy(obs)
-            #dist = Normal(mean, std)
-            #sampled_action = dist.sample()
-            #action = sampled_action * self.act_std + self.act_mean
-            action = mean * self.act_std + self.act_mean
+            action_norm = self.actor(obs)
+            action = action_norm * torch.tensor(self.act_std, dtype=torch.float32) + torch.tensor(self.act_mean, dtype=torch.float32)
             steer = np.clip(action[0].item(), -self.max_steer, self.max_steer)
-            speed = self.max_speed
-        return np.array([steer, speed])
+            speed = np.clip(action[1].item(), self.min_speed, self.max_speed)
         
-    ###################################################
-    ###################################################
+        return np.array([[steer, speed]])
+    
 
     def query_callback(self, query_msg):
+        
         id = query_msg.id
         team = query_msg.team
         map = query_msg.map
         trial = query_msg.trial
-        exit = query_msg.exit
-
+        exit = query_msg.exit 
+        
         result_msg = Result()
-
+        
         START_TIME = time.time()
-
+            
         try:
             if team != TEAM_NAME:
                 return
-
+            
             if map not in self.maps:
                 END_TIME = time.time()
                 result_msg.id = id
@@ -370,26 +297,30 @@ class RCCarPolicy(Node):
                 self.get_logger().info(">>> Invalid Track")
                 self.result_pub.publish(result_msg)
                 return
-
+            
             self.get_logger().info(f"[{team}] START TO EVALUATE! MAP NAME: {map}")
-
+            
+            ### New environment
             env = RCCarWrapper(args=self.args, maps=[map], render_mode="human_fast" if self.render else None)
             track = env._env.unwrapped.track
             if self.render:
                 env.unwrapped.add_render_callback(track.centerline.render_waypoints)
-
+            
             obs, _ = env.reset(seed=self.args.seed)
             _, _, scan = obs
 
             step = 0
             terminate = False
 
-            while True:
+            while True:  
                 act = self.get_action(scan)
-                obs, _, terminate, _, info = env.step(act)
+                steer = np.clip(act[0][0], -self.max_steer, self.max_steer)
+                speed = np.clip(act[0][1], self.min_speed, self.max_speed)
+                
+                obs, _, terminate, _, info = env.step(np.array([steer, speed]))
                 _, _, scan = obs
                 step += 1
-
+                
                 if self.render:
                     env.render()
 
@@ -415,7 +346,7 @@ class RCCarPolicy(Node):
                     result_msg.team = team
                     result_msg.map = map
                     result_msg.trial = trial
-                    result_msg.time = step * self.dt
+                    result_msg.time = step * self.dt 
                     result_msg.waypoint = info['waypoint']
                     result_msg.n_waypoints = 20
                     if info['waypoint'] == 20:
@@ -442,11 +373,10 @@ class RCCarPolicy(Node):
             result_msg.fail_type = "Script Error"
             self.get_logger().info(f">>> Script Error: {e}")
             self.result_pub.publish(result_msg)
-
+        
         if exit:
             rclpy.shutdown()
         return
-
 
 def main():
     args = get_args()
