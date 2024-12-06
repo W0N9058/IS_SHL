@@ -80,7 +80,7 @@ class PurePursuit(Node):
         self.render = args.render
         self.time_limit = 180.0
         
-        self.lookahead = 5
+        self.lookahead = 20
 
         self.save = args.save
         self.traj_dir = args.traj_dir
@@ -93,7 +93,7 @@ class PurePursuit(Node):
             Also, Recommend set Ki extremely low.
         """
         #self.Kp = 1.32
-        self.Kp = 0.9
+        self.Kp = 1.0
         self.Ki = 0.0
         self.Kd = 0.05
         ###################################################
@@ -198,21 +198,21 @@ class PurePursuit(Node):
                     d_err = 0.0
                 sum_err += curr_err * self.dt
 
-                #steer = self.Kp * curr_err + self.Ki * sum_err + self.Kd * d_err
-                #steer = np.clip(steer, -self.max_steer, self.max_steer)
-                #prev_err = curr_err
-                
-                if abs(curr_err) < 0.04:  # Dead zone to prevent small oscillations
-                    steer = 0.0
-                else:
-                    if prev_err is not None:
-                        d_err = (curr_err - prev_err) / self.dt
-                    else:
-                        d_err = 0.0
-                    sum_err += curr_err * self.dt
-                    steer = self.Kp * curr_err + self.Ki * sum_err + self.Kd * d_err
-                    steer = np.clip(steer, -self.max_steer, self.max_steer)
+                steer = self.Kp * curr_err + self.Ki * sum_err + self.Kd * d_err
+                steer = np.clip(steer, -self.max_steer, self.max_steer)
                 prev_err = curr_err
+                
+                #if abs(curr_err) < 0.04:  # Dead zone to prevent small oscillations
+                #    steer = 0.0
+                #else:
+                #    if prev_err is not None:
+                #        d_err = (curr_err - prev_err) / self.dt
+                #    else:
+                #        d_err = 0.0
+                #    sum_err += curr_err * self.dt
+                #    steer = self.Kp * curr_err + self.Ki * sum_err + self.Kd * d_err
+                #    steer = np.clip(steer, -self.max_steer, self.max_steer)
+                #prev_err = curr_err
                 
                 # 4) Calculate the appropriate speed based on the steering angle
                 #speed = max(self.min_speed, self.max_speed * (1 - abs(steer) / self.max_steer))
