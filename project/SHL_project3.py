@@ -279,10 +279,7 @@ class RCCarPolicy(Node):
             raise AssertionError("mode should be one of 'train' or 'val'.")   
 
     def get_action(self, obs):
-        # obs를 정규화하고 actor로부터 deterministic action 산출
         if self.obs_mean is None or self.obs_std is None:
-            # 모델이 로드되지 않은 경우 기본값 사용
-            # 여기서는 편의상 zero mean, one std 가정
             self.obs_mean = np.zeros(self.obs_dim)
             self.obs_std = np.ones(self.obs_dim)
             self.act_mean = np.zeros(self.act_dim)
