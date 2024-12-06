@@ -80,7 +80,7 @@ class PurePursuit(Node):
         self.render = args.render
         self.time_limit = 180.0
         
-        self.lookahead = 25
+        self.lookahead = 5
 
         self.save = args.save
         self.traj_dir = args.traj_dir
