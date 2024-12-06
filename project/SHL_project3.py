@@ -224,8 +224,8 @@ class RCCarPolicy(Node):
         obs_tensor = torch.tensor(obs_data_norm, dtype=torch.float32)
         act_tensor = torch.tensor(act_data_norm, dtype=torch.float32)
 
-        num_epochs = 500
-        batch_size = 128
+        num_epochs = 200
+        batch_size = 64
         best_loss = float('inf')
         best_model_path = os.path.join(self.model_dir, "best_ddpg_model.pkl")
 
