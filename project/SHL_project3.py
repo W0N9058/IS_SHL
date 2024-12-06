@@ -99,7 +99,7 @@ def get_args():
     # configuration files
     args.env_config = os.path.join(ws_path, args.env_config)
     args.dynamic_config = os.path.join(ws_path, args.dynamic_config)
-    
+
     with open(args.env_config, 'r') as f:
         task_args = EasyDict(YAML().load(f))
     with open(args.dynamic_config, 'r') as f:
@@ -236,8 +236,10 @@ class RCCarPolicy(Node):
             
     def load(self):
         if self.mode == 'val':
-            assert os.path.exists(self.model_path)
-            self.actor.load_state_dict(torch.load(self.model_path))
+            # best_ddpg_model.pkl을 로드하도록 수정
+            best_model_path = os.path.join(self.model_dir, "best_ddpg_model.pkl")
+            assert os.path.exists(best_model_path), f"Best model not found at {best_model_path}"
+            self.actor.load_state_dict(torch.load(best_model_path))
             self.obs_mean = np.load(os.path.join(self.model_dir, "obs_mean_2.npy"))
             self.obs_std = np.load(os.path.join(self.model_dir, "obs_std_2.npy"))
             self.act_mean = np.load(os.path.join(self.model_dir, "act_mean_2.npy"))
